@@ -105,6 +105,13 @@ def pytest_pycollect_makemodule(path, parent):
     else:
        return OdooTestModule(path, parent)
 
+@pytest.fixture
+def env():
+    dbname = odoo.tests.common.get_db_name()
+    registry = odoo.modules.registry.RegistryManager.get(dbname)
+    cr = registry.cursor()
+    uid = odoo.SUPERUSER_ID
+    return odoo.api.Environment(cr, uid, {})
 
 # Original code of xmo-odoo:
 # https://github.com/odoo-dev/odoo/commit/95a131b7f4eebc6e2c623f936283153d62f9e70f
