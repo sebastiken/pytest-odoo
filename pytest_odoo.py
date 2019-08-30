@@ -82,7 +82,10 @@ def load_registry():
     # Finally we enable `testing` flag on current thread
     # since Odoo sets it when loading test suites.
     threading.currentThread().testing = True
-    odoo.registry(odoo.tests.common.get_db_name())
+    try:
+        odoo.registry(odoo.tests.common.get_db_name())
+    except Exception:
+        odoo.registry(odoo.tools.config.options.get('db_name'))
 
 
 @pytest.fixture(scope='module', autouse=True)
@@ -105,13 +108,21 @@ def pytest_pycollect_makemodule(path, parent):
     else:
        return OdooTestModule(path, parent)
 
-@pytest.fixture
+
+@pytest.fixture(scope='session')
 def env():
     dbname = odoo.tests.common.get_db_name()
-    registry = odoo.modules.registry.RegistryManager.get(dbname)
+    try:
+        registry = odoo.modules.registry.RegistryManager.get(dbname)
+    except Exception:
+        registry = odoo.registry()
     cr = registry.cursor()
     uid = odoo.SUPERUSER_ID
-    return odoo.api.Environment(cr, uid, {})
+
+    yield odoo.api.Environment(cr, uid, {})
+
+    cr.rollback()
+
 
 # Original code of xmo-odoo:
 # https://github.com/odoo-dev/odoo/commit/95a131b7f4eebc6e2c623f936283153d62f9e70f
